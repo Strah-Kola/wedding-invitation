@@ -8,13 +8,244 @@ const reducedMotion = window.matchMedia(
 ).matches;
 
 if (loader) {
-  const loaderDelay = reducedMotion ? 250 : 7600;
+  const hasInteractiveDateGame = Boolean(
+    loader.querySelector(".invite-game-date"),
+  );
+  const loaderDelay = reducedMotion
+    ? 250
+    : hasInteractiveDateGame
+      ? 40000
+      : 7600;
 
   window.setTimeout(() => {
     loader.classList.add("is-hidden");
     document.body.classList.remove("loader-active");
   }, loaderDelay);
 }
+
+
+
+/* === KOLA INTERACTIVE INTRO DATE GAME V64 START === */
+/*
+  Three-hit interactive intro.
+  Tap/click anywhere on the loader:
+  hit 1 -> jump + chips + first crack
+  hit 2 -> jump + chips + more cracks
+  hit 3 -> jump + stronger chips + 6 breaks -> 9 appears
+
+  The runner is frozen in a real .is-ready state after his entrance, which
+  fixes the disappearing second/third jumps.
+*/
+(() => {
+  const loader = document.querySelector(".invite-loader--variant-a");
+  const game = loader?.querySelector(".invite-game-date");
+  const runner = game?.querySelector(".invite-game-runner");
+  const brick = game?.querySelector(".invite-game-brick");
+  const digit = game?.querySelector(".invite-game-digit");
+  const impact = game?.querySelector(".invite-game-impact");
+  const statusText = loader?.querySelector(".invite-opening-status span");
+
+  if (!loader || !game || !runner || !brick || !digit || !impact) return;
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+  let ready = false;
+  let busy = false;
+  let finished = false;
+  let hits = 0;
+  let queuedHits = 0;
+  let autoFinishTimer = 0;
+
+  const setRunnerTarget = () => {
+    const gameRect = game.getBoundingClientRect();
+    const brickRect = brick.getBoundingClientRect();
+    const runnerWidth = runner.getBoundingClientRect().width || 16;
+
+    const target =
+      brickRect.left -
+      gameRect.left +
+      brickRect.width / 2 -
+      runnerWidth / 2;
+
+    game.style.setProperty("--runner-target-x", `${Math.round(target)}px`);
+  };
+
+  const setStatus = () => {
+    if (!statusText || finished) return;
+
+    const remaining = Math.max(0, 3 - hits);
+
+    if (remaining === 3) {
+      statusText.textContent = "Нажмите на экран 3 раза";
+    } else if (remaining === 2) {
+      statusText.textContent = "Нажмите на экран 2 раза";
+    } else if (remaining === 1) {
+      statusText.textContent = "Нажмите на экран ещё 1 раз";
+    } else {
+      statusText.textContent = "Готово!";
+    }
+  };
+
+  const hideLoader = () => {
+    if (loader.classList.contains("is-hidden")) return;
+    loader.classList.add("is-hidden");
+    document.body.classList.remove("loader-active");
+  };
+
+  const flashImpact = () => {
+    impact.classList.remove("is-active");
+    void impact.offsetWidth;
+    impact.classList.add("is-active");
+  };
+
+  const chipBrick = () => {
+    brick.classList.remove("is-chipping");
+    void brick.offsetWidth;
+    brick.classList.add("is-chipping");
+  };
+
+  const bumpBrick = () => {
+    brick.classList.remove("is-hit");
+    void brick.offsetWidth;
+    brick.classList.add("is-hit");
+  };
+
+  const completeGame = () => {
+    if (finished) return;
+
+    finished = true;
+    ready = false;
+    window.clearTimeout(autoFinishTimer);
+
+    game.dataset.hits = "3";
+    game.classList.add("is-broken");
+
+    if (statusText) {
+      statusText.textContent = "Готово!";
+    }
+
+    window.setTimeout(() => {
+      game.classList.add("is-complete");
+      loader.classList.remove("is-game-ready");
+
+      if (statusText) {
+        statusText.textContent = "19 сентября 2026";
+      }
+    }, 520);
+
+    window.setTimeout(hideLoader, 1580);
+  };
+
+  const processQueue = () => {
+    if (!ready || busy || finished || queuedHits <= 0) return;
+
+    queuedHits -= 1;
+    busy = true;
+
+    /*
+      Freeze the runner in the visible ready state first, then restart the jump.
+      This is what keeps jump #2 and #3 visible.
+    */
+    runner.classList.add("is-ready");
+    runner.classList.remove("is-jumping");
+    void runner.offsetWidth;
+    runner.classList.add("is-jumping");
+
+    /*
+      Contact is near the jump apex.
+      Only here do we count the hit, update text, create chips and cracks.
+    */
+    window.setTimeout(() => {
+      hits += 1;
+      game.dataset.hits = String(hits);
+
+      flashImpact();
+      bumpBrick();
+      chipBrick();
+      setStatus();
+
+      if (hits >= 3) {
+        completeGame();
+      }
+    }, 330);
+
+    window.setTimeout(() => {
+      runner.classList.remove("is-jumping");
+      brick.classList.remove("is-hit");
+      brick.classList.remove("is-chipping");
+      busy = false;
+
+      if (!finished) {
+        processQueue();
+      }
+    }, 700);
+  };
+
+  const queueHit = () => {
+    if (!ready || finished) return;
+    if (hits + queuedHits >= 3) return;
+
+    queuedHits += 1;
+    processQueue();
+  };
+
+  const armGame = () => {
+    if (ready || finished) return;
+
+    ready = true;
+    runner.classList.add("is-ready");
+    loader.classList.add("is-game-ready");
+    game.dataset.hits = String(hits);
+    setStatus();
+
+    /*
+      Give the guest 30 seconds.
+      If the mini-game is not completed, simply open the invitation.
+    */
+    autoFinishTimer = window.setTimeout(() => {
+      if (finished) return;
+      hideLoader();
+    }, 30000);
+  };
+
+  setRunnerTarget();
+
+  window.addEventListener("resize", () => {
+    setRunnerTarget();
+
+    if (ready && !busy && !finished) {
+      runner.classList.add("is-ready");
+    }
+  }, { passive: true });
+
+  runner.addEventListener("animationend", (event) => {
+    if (event.animationName === "invite-game-run-to-target") {
+      armGame();
+    }
+  });
+
+  loader.addEventListener(
+    "pointerdown",
+    (event) => {
+      if (!ready || finished) return;
+      event.preventDefault();
+      queueHit();
+    },
+    { passive: false },
+  );
+
+  document.addEventListener("keydown", (event) => {
+    if (!ready || finished) return;
+
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      queueHit();
+    }
+  });
+
+  /* Safety in case animationend is missed. */
+  window.setTimeout(armGame, 6350);
+})();
+/* === KOLA INTERACTIVE INTRO DATE GAME V64 END === */
 
 if ("IntersectionObserver" in window) {
   const revealObserver = new IntersectionObserver(
@@ -587,7 +818,10 @@ toneButtons.forEach((button) => {
       }
     }, 6900);
 
-    setTimeout(startHeroSlideshow, 8600);
+    const heroFallbackDelay = document.querySelector(".invite-game-date")
+      ? 40000
+      : 8600;
+    setTimeout(startHeroSlideshow, heroFallbackDelay);
   };
 
   if (document.readyState === "loading") {
@@ -689,7 +923,10 @@ toneButtons.forEach((button) => {
       Safety fallback: loader animation is around 6.4s,
       emergency loader fallback in previous code is around 8.6s.
     */
-    setTimeout(revealPage, 8800);
+    const revealFallbackDelay = document.querySelector(".invite-game-date")
+      ? 40000
+      : 8800;
+    setTimeout(revealPage, revealFallbackDelay);
   };
 
   if (document.readyState === "loading") {
@@ -918,7 +1155,10 @@ toneButtons.forEach((button) => {
     );
   }
 
-  window.setTimeout(showPage, 9200);
+  const emptyPageFallbackDelay = document.querySelector(".invite-game-date")
+    ? 40000
+    : 9200;
+  window.setTimeout(showPage, emptyPageFallbackDelay);
 })();
 /* === KOLA EMPTY PAGE FAILSAFE V50 END === */
 

@@ -12712,3 +12712,680 @@ body.page-reveal-armed:not(.page-revealed) .ambient-bg {
 }
 /* === KOLA RSVP DEADLINE HIGHLIGHT V58 END === */
 
+/* === KOLA SEPTEMBER INTERACTIVE DATE GAME V64 START === */
+/*
+  Interactive 3-hit retro mini-game:
+  - 06 is placed inside a small brick block;
+  - the runner stays BELOW the date;
+  - every tap makes the runner visibly jump into the underside of the block;
+  - each hit throws small brick chips;
+  - cracks accumulate after hit 1 and hit 2;
+  - hit 3 breaks the 6 and reveals 9.
+*/
+
+.invite-card-date {
+  position: relative;
+  align-items: center;
+  overflow: visible;
+  font-variant-numeric: tabular-nums;
+}
+
+.invite-game-date {
+  --runner-target-x: 42px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  line-height: 1;
+  overflow: visible;
+}
+
+/* --- Brick month block: 06 --- */
+
+.invite-game-brick {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.05em;
+  height: 1.62em;
+  margin: 0 .13em;
+  padding: 0 .24em .03em;
+  gap: .01em;
+  overflow: visible;
+  border: 1px solid rgba(91, 48, 40, .74);
+  border-radius: 3px;
+  color: #fff2d8;
+  background:
+    linear-gradient(90deg, transparent 48%, rgba(255, 230, 193, .16) 49% 52%, transparent 53%),
+    linear-gradient(180deg, rgba(255,255,255,.20) 0 8%, transparent 9% 72%, rgba(80, 37, 31, .20) 73% 100%),
+    #a95e4e;
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 239, 211, .16),
+    inset 0 -3px 0 rgba(91, 48, 40, .22),
+    0 3px 0 rgba(86, 49, 40, .16);
+  transform-origin: 50% 100%;
+  isolation: isolate;
+}
+
+/* pixel-like mortar line */
+.invite-game-brick::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  left: 50%;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: rgba(255, 230, 193, .22);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+/* A tiny lower bevel makes the hit from below easier to read. */
+.invite-game-brick::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  left: 12%;
+  right: 12%;
+  bottom: -3px;
+  height: 3px;
+  border-radius: 0 0 2px 2px;
+  background: rgba(83, 40, 33, .28);
+  pointer-events: none;
+}
+
+.invite-game-brick__zero,
+.invite-game-digit__six,
+.invite-game-digit__nine {
+  position: relative;
+  z-index: 3;
+  display: block;
+  font: inherit;
+  font-family: inherit !important;
+  font-size: inherit !important;
+  font-weight: 800 !important;
+  font-style: normal !important;
+  letter-spacing: .02em !important;
+  line-height: 1;
+  color: #fff2d8;
+  text-shadow: 0 1px 0 rgba(77, 39, 31, .34);
+}
+
+.invite-game-digit {
+  position: relative;
+  z-index: 3;
+  display: inline-grid;
+  place-items: center;
+  width: .72em;
+  height: 1em;
+  color: inherit;
+}
+
+.invite-game-digit__six,
+.invite-game-digit__nine {
+  grid-area: 1 / 1;
+  transform-origin: 50% 80%;
+  backface-visibility: hidden;
+}
+
+.invite-game-digit__six {
+  opacity: 1;
+}
+
+.invite-game-digit__nine {
+  opacity: 0;
+  transform: translateY(-9px) scale(.72);
+}
+
+/* --- Persistent crack progression --- */
+
+.invite-game-crack {
+  position: absolute;
+  z-index: 6;
+  height: 1px;
+  border-radius: 999px;
+  background: rgba(69, 34, 29, .78);
+  opacity: 0;
+  transform-origin: 0 50%;
+  pointer-events: none;
+  transition: opacity .14s ease;
+}
+
+.invite-game-crack--one {
+  left: 55%;
+  bottom: 4px;
+  width: 10px;
+  transform: rotate(-57deg);
+}
+
+.invite-game-crack--two {
+  left: 55%;
+  bottom: 5px;
+  width: 9px;
+  transform: rotate(34deg);
+}
+
+.invite-game-crack--three {
+  left: 67%;
+  bottom: 8px;
+  width: 8px;
+  transform: rotate(-18deg);
+}
+
+.invite-game-date[data-hits="1"] .invite-game-crack--one,
+.invite-game-date[data-hits="2"] .invite-game-crack--one {
+  opacity: .88;
+}
+
+.invite-game-date[data-hits="2"] .invite-game-crack--two,
+.invite-game-date[data-hits="2"] .invite-game-crack--three {
+  opacity: .86;
+}
+
+/* Block visibly reacts to each hit. */
+.invite-game-brick.is-hit {
+  animation: invite-game-brick-bump .40s cubic-bezier(.2, .86, .24, 1);
+}
+
+/* --- Reusable chips: fire on EVERY hit --- */
+
+.invite-game-debris {
+  position: absolute;
+  z-index: 10;
+  left: 62%;
+  bottom: 1px;
+  width: 2px;
+  height: 2px;
+  pointer-events: none;
+}
+
+.invite-game-debris i {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 3px;
+  border-radius: 1px;
+  background: #9c5145;
+  box-shadow: inset 0 0 0 1px rgba(255, 224, 191, .14);
+  opacity: 0;
+}
+
+.invite-game-brick.is-chipping .invite-game-debris i {
+  animation-duration: .52s;
+  animation-timing-function: cubic-bezier(.18, .72, .28, 1);
+  animation-fill-mode: forwards;
+}
+
+.invite-game-brick.is-chipping .invite-game-debris i:nth-child(1) { animation-name: invite-chip-1; }
+.invite-game-brick.is-chipping .invite-game-debris i:nth-child(2) { animation-name: invite-chip-2; }
+.invite-game-brick.is-chipping .invite-game-debris i:nth-child(3) { animation-name: invite-chip-3; }
+.invite-game-brick.is-chipping .invite-game-debris i:nth-child(4) { animation-name: invite-chip-4; }
+.invite-game-brick.is-chipping .invite-game-debris i:nth-child(5) { animation-name: invite-chip-5; }
+.invite-game-brick.is-chipping .invite-game-debris i:nth-child(6) { animation-name: invite-chip-6; }
+.invite-game-brick.is-chipping .invite-game-debris i:nth-child(7) { animation-name: invite-chip-7; }
+.invite-game-brick.is-chipping .invite-game-debris i:nth-child(8) { animation-name: invite-chip-8; }
+
+/* Third hit is a stronger burst. */
+.invite-game-date.is-broken .invite-game-debris i {
+  width: 5px;
+  height: 4px;
+}
+
+/* --- Runner --- */
+
+.invite-game-runner {
+  position: absolute;
+  z-index: 12;
+  left: -25px;
+  bottom: -35px;
+  width: 16px;
+  height: 20px;
+  opacity: 0;
+  transform: translate3d(0, 0, 0);
+  transform-origin: 50% 100%;
+  filter: drop-shadow(0 2px 1px rgba(59, 42, 36, .16));
+  pointer-events: none;
+  animation: invite-game-run-to-target 1.15s steps(12, end) 5.1s forwards;
+}
+
+/*
+  IMPORTANT FIX:
+  after the entrance animation JS adds .is-ready.
+  This gives the runner a real static state with opacity:1.
+  Therefore replacing the entrance animation with the jump animation can no
+  longer make the runner disappear on jump 2/3.
+*/
+.invite-game-runner.is-ready {
+  left: var(--runner-target-x);
+  bottom: -35px;
+  opacity: 1 !important;
+  animation: none !important;
+}
+
+.invite-game-runner span {
+  position: absolute;
+  display: block;
+  box-sizing: border-box;
+}
+
+.invite-game-runner__cap {
+  left: 3px;
+  top: 0;
+  width: 10px;
+  height: 4px;
+  border-radius: 2px 3px 0 0;
+  background: #8f3d35;
+  box-shadow: 3px 2px 0 #8f3d35;
+}
+
+.invite-game-runner__head {
+  left: 5px;
+  top: 4px;
+  width: 8px;
+  height: 6px;
+  border-radius: 2px;
+  background: #d8a77f;
+  box-shadow:
+    -2px 2px 0 #4b322b,
+    5px 2px 0 #4b322b;
+}
+
+.invite-game-runner__body {
+  left: 4px;
+  top: 10px;
+  width: 9px;
+  height: 7px;
+  border-radius: 2px 2px 1px 1px;
+  background: #7f443d;
+  box-shadow:
+    2px 0 0 #b97657 inset,
+    -2px 0 0 rgba(255,255,255,.14) inset;
+}
+
+.invite-game-runner__arm {
+  right: 0;
+  top: 10px;
+  width: 4px;
+  height: 3px;
+  border-radius: 2px;
+  background: #d8a77f;
+  transform-origin: 0 50%;
+  animation: invite-game-arm-run .22s steps(2, end) 5.1s 6;
+}
+
+.invite-game-runner__leg {
+  top: 17px;
+  width: 5px;
+  height: 3px;
+  border-radius: 1px;
+  background: #4b322b;
+}
+
+.invite-game-runner__leg--one {
+  left: 3px;
+  animation: invite-game-leg-one-run .22s steps(2, end) 5.1s 6;
+}
+
+.invite-game-runner__leg--two {
+  right: 1px;
+  animation: invite-game-leg-two-run .22s steps(2, end) 5.1s 6;
+}
+
+/* Every tap: visible jump from BELOW the block. */
+.invite-game-runner.is-ready.is-jumping {
+  opacity: 1 !important;
+  animation: invite-game-player-jump .66s cubic-bezier(.34, 0, .18, 1) forwards !important;
+}
+
+.invite-game-runner.is-jumping .invite-game-runner__arm {
+  animation: invite-game-jump-arm .66s ease forwards !important;
+}
+
+.invite-game-runner.is-jumping .invite-game-runner__leg--one {
+  animation: invite-game-jump-leg-one .66s ease forwards !important;
+}
+
+.invite-game-runner.is-jumping .invite-game-runner__leg--two {
+  animation: invite-game-jump-leg-two .66s ease forwards !important;
+}
+
+/* Contact flash at the underside of 06 block. */
+.invite-game-impact {
+  position: absolute;
+  z-index: 13;
+  left: calc(var(--runner-target-x) + 8px);
+  top: auto;
+  bottom: -3px;
+  width: 5px;
+  height: 5px;
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(45deg) scale(.2);
+  background: #e0ad69;
+  box-shadow:
+    7px 0 0 -1px #e0ad69,
+    -7px 0 0 -1px #e0ad69,
+    0 7px 0 -1px #e0ad69,
+    0 -7px 0 -1px #e0ad69;
+  pointer-events: none;
+}
+
+.invite-game-impact.is-active {
+  animation: invite-game-impact-pop .34s ease forwards;
+}
+
+/* --- Third hit --- */
+
+.invite-game-date.is-broken .invite-game-digit__six {
+  animation: invite-game-six-break .44s cubic-bezier(.22, .8, .24, 1) forwards;
+}
+
+.invite-game-date.is-broken .invite-game-digit__nine {
+  animation: invite-game-nine-drop .62s cubic-bezier(.17, .9, .24, 1.22) .17s forwards;
+}
+
+.invite-game-date.is-broken .invite-game-brick {
+  animation: invite-game-brick-break .58s cubic-bezier(.2, .82, .24, 1);
+}
+
+.invite-game-date.is-broken .invite-game-crack {
+  opacity: .92;
+}
+
+/* After success runner exits right. */
+.invite-game-date.is-complete .invite-game-runner {
+  opacity: 1 !important;
+  animation: invite-game-run-away .86s steps(10, end) forwards !important;
+}
+
+/* Entire intro remains a tap target while ready. */
+.invite-loader.is-game-ready {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.invite-loader.is-game-ready .invite-opening-status span {
+  letter-spacing: .10em;
+}
+
+/* September 2026 starts on Tuesday. */
+.calendar-day--empty {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* --- Motion --- */
+
+@keyframes invite-game-run-to-target {
+  0% {
+    left: -25px;
+    bottom: -35px;
+    opacity: 0;
+  }
+
+  8% {
+    opacity: 1;
+  }
+
+  100% {
+    left: var(--runner-target-x);
+    bottom: -35px;
+    opacity: 1;
+  }
+}
+
+@keyframes invite-game-player-jump {
+  0% {
+    left: var(--runner-target-x);
+    bottom: -35px;
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+
+  34% {
+    left: var(--runner-target-x);
+    bottom: -35px;
+    opacity: 1;
+    transform: translateY(-12px) rotate(-3deg) scale(1.02);
+  }
+
+  /*
+    Ceiling hit:
+    the runner's head reaches only the UNDERSIDE of the brick.
+    He no longer travels through the 06 block.
+  */
+  50% {
+    left: var(--runner-target-x);
+    bottom: -35px;
+    opacity: 1;
+    transform: translateY(-18px) rotate(0deg) scale(1.04);
+  }
+
+  62% {
+    left: var(--runner-target-x);
+    bottom: -35px;
+    opacity: 1;
+    transform: translateY(-14px) rotate(2deg) scale(1.02);
+  }
+
+  100% {
+    left: var(--runner-target-x);
+    bottom: -35px;
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+  }
+}
+
+@keyframes invite-game-brick-bump {
+  0%, 100% {
+    transform: translateY(0);
+  }
+
+  38% {
+    transform: translateY(-3px);
+  }
+
+  62% {
+    transform: translateY(1px);
+  }
+}
+
+@keyframes invite-game-brick-break {
+  0%, 100% {
+    transform: translateY(0) rotate(0);
+  }
+
+  32% {
+    transform: translateY(-6px) rotate(-1.5deg);
+  }
+
+  54% {
+    transform: translateY(2px) rotate(1.2deg);
+  }
+
+  72% {
+    transform: translateY(-1px) rotate(-.5deg);
+  }
+}
+
+@keyframes invite-game-impact-pop {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(45deg) scale(.2);
+  }
+
+  38% {
+    opacity: .98;
+    transform: translate(-50%, -50%) rotate(45deg) scale(1);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(45deg) scale(1.8);
+  }
+}
+
+@keyframes invite-game-six-break {
+  0% {
+    opacity: 1;
+    transform: translateY(0) rotate(0deg) scale(1);
+    filter: blur(0);
+  }
+
+  42% {
+    opacity: .82;
+    transform: translateY(-5px) rotate(-9deg) scale(1.14);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(6px) rotate(24deg) scale(.38);
+    filter: blur(1px);
+  }
+}
+
+@keyframes invite-game-nine-drop {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px) scale(.7);
+  }
+
+  48% {
+    opacity: 1;
+    transform: translateY(2px) scale(1.12);
+  }
+
+  72% {
+    opacity: 1;
+    transform: translateY(-1px) scale(.97);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Chips fly mostly DOWN because the block is hit from below. */
+@keyframes invite-chip-1 {
+  0% { opacity: .95; transform: translate(0, 0) rotate(0); }
+  100% { opacity: 0; transform: translate(-17px, 15px) rotate(-120deg); }
+}
+@keyframes invite-chip-2 {
+  0% { opacity: .95; transform: translate(0, 0) rotate(0); }
+  100% { opacity: 0; transform: translate(15px, 17px) rotate(105deg); }
+}
+@keyframes invite-chip-3 {
+  0% { opacity: .95; transform: translate(0, 0) rotate(0); }
+  100% { opacity: 0; transform: translate(-10px, 24px) rotate(-90deg); }
+}
+@keyframes invite-chip-4 {
+  0% { opacity: .95; transform: translate(0, 0) rotate(0); }
+  100% { opacity: 0; transform: translate(9px, 25px) rotate(96deg); }
+}
+@keyframes invite-chip-5 {
+  0% { opacity: .92; transform: translate(0, 0) rotate(0); }
+  100% { opacity: 0; transform: translate(-22px, 7px) rotate(-150deg); }
+}
+@keyframes invite-chip-6 {
+  0% { opacity: .92; transform: translate(0, 0) rotate(0); }
+  100% { opacity: 0; transform: translate(22px, 8px) rotate(145deg); }
+}
+@keyframes invite-chip-7 {
+  0% { opacity: .90; transform: translate(0, 0) rotate(0); }
+  100% { opacity: 0; transform: translate(-4px, 29px) rotate(-70deg); }
+}
+@keyframes invite-chip-8 {
+  0% { opacity: .90; transform: translate(0, 0) rotate(0); }
+  100% { opacity: 0; transform: translate(4px, 30px) rotate(72deg); }
+}
+
+@keyframes invite-game-run-away {
+  0% {
+    left: var(--runner-target-x);
+    bottom: -35px;
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  24% {
+    left: calc(var(--runner-target-x) + 10px);
+    bottom: -35px;
+    opacity: 1;
+    transform: translateY(-9px);
+  }
+
+  100% {
+    left: calc(100% + 24px);
+    bottom: -35px;
+    opacity: 0;
+    transform: translateY(0);
+  }
+}
+
+@keyframes invite-game-arm-run {
+  0%, 100% { transform: rotate(24deg); }
+  50% { transform: rotate(-28deg); }
+}
+
+@keyframes invite-game-leg-one-run {
+  0%, 100% { transform: translateX(0) rotate(16deg); }
+  50% { transform: translateX(2px) rotate(-18deg); }
+}
+
+@keyframes invite-game-leg-two-run {
+  0%, 100% { transform: translateX(0) rotate(-18deg); }
+  50% { transform: translateX(-2px) rotate(18deg); }
+}
+
+@keyframes invite-game-jump-arm {
+  0%, 100% { transform: rotate(12deg); }
+  48% { transform: rotate(-76deg); }
+}
+
+@keyframes invite-game-jump-leg-one {
+  0%, 100% { transform: translate(0, 0) rotate(10deg); }
+  46% { transform: translate(2px, -2px) rotate(-42deg); }
+}
+
+@keyframes invite-game-jump-leg-two {
+  0%, 100% { transform: translate(0, 0) rotate(-10deg); }
+  46% { transform: translate(-2px, -1px) rotate(40deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .invite-game-runner,
+  .invite-game-impact,
+  .invite-game-crack,
+  .invite-game-debris,
+  .invite-game-digit__six {
+    display: none !important;
+    animation: none !important;
+  }
+
+  .invite-game-digit__nine {
+    opacity: 1 !important;
+    transform: none !important;
+    animation: none !important;
+  }
+}
+/* === KOLA SEPTEMBER INTERACTIVE DATE GAME V64 END === */
+
+/* === KOLA INTERACTIVE LOADER TIMER FIX V63 START === */
+/*
+  IMPORTANT:
+  The legacy CSS safety rule hides every loader after 8.2 seconds.
+  For the current interactive intro this must be disabled, otherwise the
+  30-second tap window can never work.
+
+  The loader is now closed only by script.js:
+  - immediately after the third successful hit;
+  - after 30 seconds if the guest does not finish;
+  - 40-second JS timer remains the final emergency fallback.
+*/
+.invite-loader.invite-loader--variant-a {
+  animation: none !important;
+}
+/* === KOLA INTERACTIVE LOADER TIMER FIX V63 END === */
+
