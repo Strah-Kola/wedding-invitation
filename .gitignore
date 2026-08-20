@@ -13,3 +13,6 @@ public/
 *.log
 dist-netlify/
 .vercel/
+
+# Synology deployment staging
+deploy/synology/site/
