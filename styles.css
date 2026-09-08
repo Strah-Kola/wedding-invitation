@@ -1084,6 +1084,14 @@ textarea {
 .form-message--success {
     background: rgba(169, 184, 155, 0.25);
     color: #536246;
+    font-size: 0.88rem;
+    font-weight: 500;
+    line-height: 1.4;
+    text-align: center;
+}
+
+.form-message--success strong {
+    font-weight: 800;
 }
 
 .form-message--error {
@@ -10994,13 +11002,11 @@ body.page-reveal-armed.page-revealed .block-hero {
 }
 /* === KOLA PROGRAM HEADINGS VENUES V48 END === */
 
-/* === KOLA VENUE RSVP DRINKS V49 START === */
+/* === KOLA VENUE RHYTHM V49 START === */
 /*
   V49:
   - venue buttons have equal vertical rhythm;
-  - restaurant map button gets the same air as ZAGS;
-  - drinks textarea becomes compact checkboxes + custom drink field;
-  - backend still receives one hidden field: name="drinks".
+  - restaurant map button gets the same air as ZAGS.
 */
 
 /* Places: same rhythm for both venue cards. */
@@ -11039,139 +11045,7 @@ body.page-reveal-armed.page-revealed .block-hero {
 .venue-grid .venue-card:nth-child(2) .venue-card__body .button {
   margin-top: 14px !important;
 }
-
-/* RSVP drinks */
-.drinks-fieldset {
-  display: grid !important;
-  gap: 14px !important;
-}
-
-.drink-options {
-  display: grid !important;
-  grid-template-columns: 1fr 1fr !important;
-  gap: 10px !important;
-}
-
-.drink-option {
-  position: relative !important;
-  display: grid !important;
-  grid-template-columns: 20px minmax(0, 1fr) !important;
-  align-items: center !important;
-  gap: 9px !important;
-
-  min-height: 46px !important;
-  padding: 11px 12px !important;
-
-  border: 1px solid rgba(68, 51, 43, 0.12) !important;
-  border-radius: 18px !important;
-  background:
-    radial-gradient(circle at 18% 18%, rgba(255,255,255,0.48), transparent 4rem),
-    rgba(255, 248, 237, 0.58) !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,0.20),
-    0 9px 20px rgba(68, 51, 43, 0.045) !important;
-
-  color: rgba(59, 42, 36, 0.86) !important;
-  font-family: var(--font-base) !important;
-  font-size: 0.9rem !important;
-  line-height: 1.15 !important;
-  cursor: pointer !important;
-  user-select: none !important;
-
-  transition:
-    border-color 160ms ease,
-    background-color 160ms ease,
-    transform 160ms ease,
-    box-shadow 160ms ease !important;
-}
-
-.drink-option:hover {
-  transform: translateY(-1px) !important;
-  border-color: rgba(103, 44, 39, 0.20) !important;
-}
-
-.drink-option:has(input:checked) {
-  border-color: rgba(103, 44, 39, 0.34) !important;
-  background:
-    radial-gradient(circle at 18% 18%, rgba(255,255,255,0.48), transparent 4rem),
-    rgba(214, 165, 154, 0.16) !important;
-  box-shadow:
-    inset 0 0 0 1px rgba(255,255,255,0.22),
-    0 12px 24px rgba(103, 44, 39, 0.08) !important;
-}
-
-.drink-option input {
-  appearance: none !important;
-  -webkit-appearance: none !important;
-
-  width: 20px !important;
-  height: 20px !important;
-  margin: 0 !important;
-
-  border-radius: 7px !important;
-  border: 1px solid rgba(68, 51, 43, 0.22) !important;
-  background: rgba(255, 248, 237, 0.76) !important;
-  box-shadow: inset 0 1px 2px rgba(68, 51, 43, 0.08) !important;
-
-  display: grid !important;
-  place-items: center !important;
-}
-
-.drink-option input::after {
-  content: "" !important;
-  width: 9px !important;
-  height: 9px !important;
-  border-radius: 4px !important;
-  background: rgba(103, 44, 39, 0.84) !important;
-  transform: scale(0) !important;
-  transition: transform 140ms ease !important;
-}
-
-.drink-option input:checked::after {
-  transform: scale(1) !important;
-}
-
-.drink-option input:focus-visible {
-  outline: 2px solid rgba(103, 44, 39, 0.44) !important;
-  outline-offset: 3px !important;
-}
-
-.drink-custom {
-  display: grid !important;
-  gap: 8px !important;
-  margin-top: 2px !important;
-}
-
-.drink-custom span {
-  color: rgba(59, 42, 36, 0.74) !important;
-  font-family: var(--font-base) !important;
-  font-size: 0.88rem !important;
-  font-weight: 800 !important;
-}
-
-.drink-custom input {
-  width: 100% !important;
-}
-
-@media (max-width: 390px) {
-  .drink-options {
-    gap: 8px !important;
-  }
-
-  .drink-option {
-    grid-template-columns: 18px minmax(0, 1fr) !important;
-    gap: 8px !important;
-    padding: 10px 10px !important;
-    border-radius: 16px !important;
-    font-size: 0.84rem !important;
-  }
-
-  .drink-option input {
-    width: 18px !important;
-    height: 18px !important;
-  }
-}
-/* === KOLA VENUE RSVP DRINKS V49 END === */
+/* === KOLA VENUE RHYTHM V49 END === */
 
 /* === KOLA EMPTY PAGE AND DETAILS SVG FIX V50 START === */
 /*
@@ -13389,3 +13263,89 @@ body.page-reveal-armed:not(.page-revealed) .ambient-bg {
 }
 /* === KOLA INTERACTIVE LOADER TIMER FIX V63 END === */
 
+
+
+/* === KOLA RESTAURANT GALLERY V57 START === */
+
+/*
+  Restaurant:
+  exterior + five official interior photographs.
+  JS only changes .is-active every 5 seconds.
+*/
+
+.venue-card__media--gallery {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    background: var(--cream);
+}
+
+.venue-card__media--gallery .venue-card__gallery-image {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    aspect-ratio: auto;
+    object-fit: cover;
+    opacity: 0;
+    transform: scale(1);
+    transition:
+        opacity 1100ms ease,
+        transform 6000ms ease;
+    pointer-events: none;
+}
+
+.venue-card__media--gallery .venue-card__gallery-image.is-active {
+    opacity: 1;
+    transform: scale(1.025);
+    z-index: 1;
+}
+
+/*
+  После удаления цветочной подписки карточка книги занимает
+  нормальную ширину секции и центрируется.
+*/
+#details .detail-elegant-card--book {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: 760px;
+    margin-inline: auto;
+    justify-self: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .venue-card__media--gallery .venue-card__gallery-image {
+        transition: none;
+        transform: none !important;
+    }
+}
+
+/* === KOLA RESTAURANT GALLERY V57 END === */
+
+
+/* === KOLA DRESS SWIPE V58 START === */
+
+/*
+  Allow normal vertical page scrolling,
+  but give JS horizontal swipe gestures.
+*/
+.dress-style-slider__stage {
+    touch-action: pan-y !important;
+    user-select: none !important;
+    -webkit-user-select: none !important;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/*
+  Existing .is-swipe-in enters from the right.
+  This class is used when swiping to the previous slide.
+*/
+.dress-style-slide.is-swipe-in-left {
+    visibility: visible !important;
+    transform: translate3d(-112%, 0, 0) !important;
+    transition: none !important;
+    z-index: 3 !important;
+}
+
+/* === KOLA DRESS SWIPE V58 END === */

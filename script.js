@@ -969,24 +969,61 @@ toneButtons.forEach((button) => {
 })();
 /* === KOLA DRESS PALETTE PICKER V39 END === */
 
-/* === KOLA DRESS SLIDER HARD FIX V42 START === */
+/* === KOLA DRESS SLIDER AUTO + SWIPE V58 START === */
 /*
-  Manual dress-code slider.
-  No autoplay. No leaving ghost slide.
+  Dress-code carousel:
+  - autoplay every 4 seconds;
+  - click advances to next slide;
+  - dots remain interactive;
+  - horizontal swipe works in both directions;
+  - manual interaction restarts autoplay timer;
+  - autoplay pauses on hover/focus and while page is hidden;
+  - prefers-reduced-motion disables autoplay.
 */
 (() => {
   const slider = document.querySelector(".dress-style-slider");
   if (!slider) return;
 
-  const slides = Array.from(slider.querySelectorAll(".dress-style-slide"));
-  const captions = Array.from(slider.querySelectorAll(".dress-style-caption"));
-  const dots = Array.from(slider.querySelectorAll(".dress-style-dot"));
-  const stage = slider.querySelector(".dress-style-slider__stage");
+  const slides = Array.from(
+    slider.querySelectorAll(".dress-style-slide")
+  );
 
-  if (!slides.length || slides.length !== captions.length || !dots.length) return;
+  const captions = Array.from(
+    slider.querySelectorAll(".dress-style-caption")
+  );
+
+  const dots = Array.from(
+    slider.querySelectorAll(".dress-style-dot")
+  );
+
+  const stage = slider.querySelector(
+    ".dress-style-slider__stage"
+  );
+
+  if (
+    !slides.length ||
+    slides.length !== captions.length ||
+    !dots.length ||
+    !stage
+  ) {
+    return;
+  }
+
+  const AUTOPLAY_DELAY = 4000;
+  const SWIPE_THRESHOLD = 44;
+
+  const reduceMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)"
+  ).matches;
 
   let activeIndex = 0;
   let locked = false;
+  let autoplayTimer = null;
+
+  let pointerStartX = 0;
+  let pointerStartY = 0;
+  let pointerId = null;
+  let swipeDetected = false;
 
   const normalizeIndex = (index) =>
     ((index % slides.length) + slides.length) % slides.length;
@@ -994,52 +1031,102 @@ toneButtons.forEach((button) => {
   const setDots = (nextIndex) => {
     dots.forEach((dot, index) => {
       const active = index === nextIndex;
+
       dot.classList.toggle("is-active", active);
-      dot.setAttribute("aria-pressed", active ? "true" : "false");
+      dot.setAttribute(
+        "aria-pressed",
+        active ? "true" : "false"
+      );
     });
   };
 
   const setCaptions = (nextIndex) => {
     captions.forEach((caption, index) => {
-      caption.classList.toggle("is-active", index === nextIndex);
+      caption.classList.toggle(
+        "is-active",
+        index === nextIndex
+      );
     });
   };
 
   const hardResetSlides = () => {
     slides.forEach((slide) => {
-      slide.classList.remove("is-active", "is-entering", "is-leaving", "is-swipe-in");
+      slide.classList.remove(
+        "is-active",
+        "is-entering",
+        "is-leaving",
+        "is-swipe-in",
+        "is-swipe-in-left"
+      );
     });
   };
 
   const setImmediate = (nextIndex) => {
     activeIndex = normalizeIndex(nextIndex);
-    slider.dataset.dressStyleIndex = String(activeIndex);
+
+    slider.dataset.dressStyleIndex =
+      String(activeIndex);
 
     hardResetSlides();
-    slides[activeIndex].classList.add("is-active");
+
+    slides[activeIndex].classList.add(
+      "is-active"
+    );
 
     setCaptions(activeIndex);
     setDots(activeIndex);
   };
 
-  const goTo = (nextIndex) => {
+  const stopAutoplay = () => {
+    if (autoplayTimer !== null) {
+      window.clearTimeout(autoplayTimer);
+      autoplayTimer = null;
+    }
+  };
+
+  const scheduleAutoplay = () => {
+    stopAutoplay();
+
+    if (
+      reduceMotion ||
+      document.hidden ||
+      slides.length < 2
+    ) {
+      return;
+    }
+
+    autoplayTimer = window.setTimeout(() => {
+      goTo(activeIndex + 1, "next", false);
+    }, AUTOPLAY_DELAY);
+  };
+
+  const goTo = (
+    nextIndex,
+    direction = "next",
+    restartTimer = true
+  ) => {
     if (locked) return;
 
     const normalized = normalizeIndex(nextIndex);
-    if (normalized === activeIndex) return;
+
+    if (normalized === activeIndex) {
+      if (restartTimer) scheduleAutoplay();
+      return;
+    }
 
     locked = true;
+    stopAutoplay();
 
-    /*
-      Important:
-      Previous slide is hidden immediately.
-      Only the new slide enters from the right.
-      This removes ghost figures from old auto-slider logic.
-    */
     hardResetSlides();
 
     const nextSlide = slides[normalized];
-    nextSlide.classList.add("is-active", "is-swipe-in");
+
+    nextSlide.classList.add(
+      "is-active",
+      direction === "prev"
+        ? "is-swipe-in-left"
+        : "is-swipe-in"
+    );
 
     setCaptions(normalized);
     setDots(normalized);
@@ -1047,80 +1134,164 @@ toneButtons.forEach((button) => {
     void nextSlide.offsetWidth;
 
     requestAnimationFrame(() => {
-      nextSlide.classList.remove("is-swipe-in");
+      nextSlide.classList.remove(
+        "is-swipe-in",
+        "is-swipe-in-left"
+      );
     });
 
     activeIndex = normalized;
-    slider.dataset.dressStyleIndex = String(activeIndex);
+
+    slider.dataset.dressStyleIndex =
+      String(activeIndex);
 
     window.setTimeout(() => {
       slides.forEach((slide, index) => {
-        slide.classList.remove("is-entering", "is-leaving", "is-swipe-in");
-        slide.classList.toggle("is-active", index === activeIndex);
+        slide.classList.remove(
+          "is-entering",
+          "is-leaving",
+          "is-swipe-in",
+          "is-swipe-in-left"
+        );
+
+        slide.classList.toggle(
+          "is-active",
+          index === activeIndex
+        );
       });
 
       locked = false;
+      scheduleAutoplay();
     }, 470);
   };
 
+  // Dots
   dots.forEach((dot) => {
     dot.addEventListener("click", () => {
-      const nextIndex = Number.parseInt(dot.dataset.dressStyleTarget || "0", 10);
-      goTo(nextIndex);
+      const nextIndex = Number.parseInt(
+        dot.dataset.dressStyleTarget || "0",
+        10
+      );
+
+      const direction =
+        nextIndex < activeIndex ? "prev" : "next";
+
+      goTo(nextIndex, direction);
     });
   });
 
-  stage?.addEventListener("click", () => {
-    goTo(activeIndex + 1);
-  });
+  // ----------------------------------------------------------
+  // Horizontal swipe
+  // ----------------------------------------------------------
 
-  setImmediate(0);
-})();
-/* === KOLA DRESS SLIDER HARD FIX V42 END === */
-
-/* === KOLA RSVP DRINKS CHECKBOXES V49 START === */
-/*
-  Keeps Google Apps Script compatibility:
-  visible checkboxes have no name,
-  final value is written to hidden input name="drinks".
-*/
-(() => {
-  const fieldset = document.querySelector("[data-drinks-fieldset]");
-  if (!fieldset) return;
-
-  const output = fieldset.querySelector("[data-drinks-output]");
-  const options = Array.from(fieldset.querySelectorAll("[data-drink-option]"));
-  const custom = fieldset.querySelector("[data-custom-drink]");
-  const form = document.querySelector("#rsvp-form");
-
-  if (!output || !options.length) return;
-
-  const syncDrinks = () => {
-    const selected = options
-      .filter((option) => option.checked)
-      .map((option) => option.value.trim())
-      .filter(Boolean);
-
-    const customValue = custom?.value?.trim() || "";
-
-    if (customValue) {
-      selected.push(`Свой напиток: ${customValue}`);
+  stage.addEventListener("pointerdown", (event) => {
+    if (event.pointerType === "mouse" && event.button !== 0) {
+      return;
     }
 
-    output.value = selected.join(", ");
-  };
+    pointerId = event.pointerId;
+    pointerStartX = event.clientX;
+    pointerStartY = event.clientY;
+    swipeDetected = false;
 
-  options.forEach((option) => {
-    option.addEventListener("change", syncDrinks);
+    stopAutoplay();
+
+    try {
+      stage.setPointerCapture(pointerId);
+    } catch (_) {
+      // Pointer capture is optional.
+    }
   });
 
-  custom?.addEventListener("input", syncDrinks);
+  stage.addEventListener("pointerup", (event) => {
+    if (pointerId !== event.pointerId) return;
 
-  form?.addEventListener("submit", syncDrinks);
+    const deltaX = event.clientX - pointerStartX;
+    const deltaY = event.clientY - pointerStartY;
 
-  syncDrinks();
+    const horizontal =
+      Math.abs(deltaX) > Math.abs(deltaY) * 1.15;
+
+    if (
+      horizontal &&
+      Math.abs(deltaX) >= SWIPE_THRESHOLD
+    ) {
+      swipeDetected = true;
+
+      if (deltaX < 0) {
+        // Swipe left → next
+        goTo(activeIndex + 1, "next");
+      } else {
+        // Swipe right → previous
+        goTo(activeIndex - 1, "prev");
+      }
+    } else {
+      scheduleAutoplay();
+    }
+
+    try {
+      stage.releasePointerCapture(pointerId);
+    } catch (_) {
+      // Nothing to release.
+    }
+
+    pointerId = null;
+  });
+
+  stage.addEventListener("pointercancel", () => {
+    pointerId = null;
+    swipeDetected = false;
+    scheduleAutoplay();
+  });
+
+  // Existing click behavior remains.
+  // Suppress the synthetic click generated after a real swipe.
+  stage.addEventListener("click", () => {
+    if (swipeDetected) {
+      swipeDetected = false;
+      return;
+    }
+
+    goTo(activeIndex + 1, "next");
+  });
+
+  // Desktop: don't rotate while a user is interacting with it.
+  slider.addEventListener(
+    "mouseenter",
+    stopAutoplay
+  );
+
+  slider.addEventListener(
+    "mouseleave",
+    scheduleAutoplay
+  );
+
+  slider.addEventListener(
+    "focusin",
+    stopAutoplay
+  );
+
+  slider.addEventListener(
+    "focusout",
+    scheduleAutoplay
+  );
+
+  document.addEventListener(
+    "visibilitychange",
+    () => {
+      if (document.hidden) {
+        stopAutoplay();
+      } else {
+        scheduleAutoplay();
+      }
+    }
+  );
+
+  setImmediate(0);
+  scheduleAutoplay();
 })();
-/* === KOLA RSVP DRINKS CHECKBOXES V49 END === */
+/* === KOLA DRESS SLIDER AUTO + SWIPE V58 END === */
+
 
 /* === KOLA EMPTY PAGE FAILSAFE V50 START === */
 /*
@@ -1162,3 +1333,46 @@ toneButtons.forEach((button) => {
 })();
 /* === KOLA EMPTY PAGE FAILSAFE V50 END === */
 
+
+
+/* === KOLA RESTAURANT GALLERY V57 START === */
+/*
+  Automatic restaurant photo gallery.
+  No dots, arrows or controls.
+  Changes image every 5 seconds.
+*/
+(() => {
+  const galleries = document.querySelectorAll("[data-venue-gallery]");
+
+  if (!galleries.length) return;
+
+  const reduceMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)"
+  ).matches;
+
+  galleries.forEach((gallery) => {
+    const images = Array.from(
+      gallery.querySelectorAll(".venue-card__gallery-image")
+    );
+
+    if (images.length < 2) return;
+
+    let activeIndex = 0;
+
+    const show = (index) => {
+      images.forEach((image, imageIndex) => {
+        image.classList.toggle("is-active", imageIndex === index);
+      });
+    };
+
+    show(0);
+
+    if (reduceMotion) return;
+
+    window.setInterval(() => {
+      activeIndex = (activeIndex + 1) % images.length;
+      show(activeIndex);
+    }, 5000);
+  });
+})();
+/* === KOLA RESTAURANT GALLERY V57 END === */
